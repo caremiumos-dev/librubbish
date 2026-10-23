@@ -1,0 +1,60 @@
+librubbish
+
+This repository contains a C++ and CMake rewrite of the Android JNI library
+librubbish.so. The goal is to preserve the original library's ABI and
+observable behavior.
+
+Public interface
+
+JNI_OnLoad registers gete()Ljava/lang/String; on
+com/xtc/secretapi/XTCGetUtilWrapper. The original implementation returns
+xtc_ok from this method, and this rewrite does the same.
+
+Java_com_xtc_secretapi_XTCGetUtilWrapper_init reads the current APK signing
+certificate, computes the SHA-1 digest of the certificate encoding, converts
+it to uppercase hexadecimal, and compares it with the supplied string. It
+returns xtc_ok when they match and xtc_error otherwise.
+
+The original exported symbols getApplication, get6, jstringToChar,
+getSignArray, AUTH_KEY, and ERROR_KEY are also retained.
+
+Requirements
+
+Use an Android NDK with CMake and Ninja. On Windows, the build script finds
+the NDK under %LOCALAPPDATA%\Android\Sdk\ndk by default.
+
+Build
+
+From PowerShell:
+
+    .\scripts\build.ps1
+
+The default target is armeabi-v7a, matching the original library. To select
+another ABI:
+
+    .\scripts\build.ps1 -Abi arm64-v8a
+
+The library is written to:
+
+    build\android-armeabi-v7a\librubbish.so
+
+Verify
+
+    .\scripts\verify.ps1
+
+The verification script checks the ELF architecture, SONAME, required
+exports, and prints the SHA-256 hash.
+
+Dependencies
+
+The original library depended only on Android system libraries and had no
+third-party dependencies. This rewrite also uses only Android system
+libraries, so FetchContent is not currently required. The C++ runtime is
+linked with the NDK's static c++_static setting to avoid requiring a separate
+libc++_shared.so.
+
+Device testing
+
+tests/android contains a small integration test application. The optional
+test-on-device.ps1 script builds and runs it on a connected ARMv7 Android
+device. It is not run automatically.
